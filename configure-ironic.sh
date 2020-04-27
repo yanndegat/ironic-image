@@ -7,6 +7,13 @@ MARIADB_PASSWORD=${MARIADB_PASSWORD:-"change_me"}
 NUMPROC=$(cat /proc/cpuinfo  | grep "^processor" | wc -l)
 NUMWORKERS=$(( NUMPROC < 12 ? NUMPROC : 12 ))
 
+OVH_ENDPOINT=${OVH_ENDPOINT:-"ovh-eu"}
+OVH_CONSUMER_KEY=${OVH_CONSUMER_KEY:-"change_me"}
+OVH_APPLICATION_KEY=${OVH_APPLICATION_KEY:-"change_me"}
+OVH_APPLICATION_SECRET=${OVH_APPLICATION_SECRET:-"change_me"}
+OVH_POWEROFF_SCRIPT=${OVH_POWEROFF_SCRIPT:-"poweroff.ipxe"}
+OVH_BOOT_SCRIPT=${OVH_BOOT_SCRIPT:-"boot.ipxe"}
+
 # Whether to enable fast_track provisioning or not
 IRONIC_FAST_TRACK=${IRONIC_FAST_TRACK:-true}
 
@@ -20,6 +27,23 @@ cp /etc/ironic/ironic.conf /etc/ironic/ironic.conf_orig
 crudini --merge /etc/ironic/ironic.conf <<EOF
 [DEFAULT]
 my_ip = $IRONIC_IP
+
+default_deploy_interface = direct
+enabled_deploy_interfaces = direct,fake
+
+default_inspect_interface = inspector
+enabled_inspect_interfaces = inspector
+default_boot_interface = ipxe
+default_network_interface = noop
+default_management_interface = ovhapi
+
+enabled_boot_interfaces = ipxe
+enabled_hardware_types = ovhapi
+enabled_management_interfaces = ovhapi
+enabled_power_interfaces = ovhapi
+
+auth_strategy = noauth
+debug = true
 
 [api]
 host_ip = ::
@@ -39,6 +63,15 @@ fast_track = ${IRONIC_FAST_TRACK}
 
 [inspector]
 endpoint_override = http://${IRONIC_URL_HOST}:5050
+
+[ovhapi]
+consumer_key = '${OVH_CONSUMER_KEY}'
+application_key = '${OVH_APPLICATION_KEY}'
+application_secret = '${OVH_APPLICATION_SECRET}'
+
+endpoint = ${OVH_ENDPOINT}
+poweroff_script = ${OVH_POWEROFF_SCRIPT}
+boot_script = ${OVH_BOOT_SCRIPT}
 EOF
 
 mkdir -p /shared/html
